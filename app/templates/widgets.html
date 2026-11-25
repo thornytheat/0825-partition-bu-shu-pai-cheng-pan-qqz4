@@ -34,12 +34,27 @@
 {% endmacro %}
 {% macro archive() %}
 <aside class="panel archive" id="review-area"><h2>批次复核</h2><ul id="history"></ul>
-  <form id="review" hidden>
-    <p id="run-status"></p><label for="note">复核意见</label>
-    <textarea id="note" name="note" minlength="3" maxlength="200" required></textarea>
-    <div class="review-actions"><button name="decision" value="HELD">暂缓</button><button class="action" name="decision" value="APPROVED">签发</button></div>
+  <div id="review" hidden>
+    <p id="run-status"></p>
+    <form id="case-panel" hidden>
+      <h3 id="case-title">分组复核</h3>
+      <p id="case-state"></p>
+      <label for="case-note">复核意见</label>
+      <textarea id="case-note" name="case-note" minlength="3" maxlength="200" required></textarea>
+      <div class="review-actions">
+        <button name="case-decision" value="HELD">暂缓该组</button>
+        <button class="action" name="case-decision" value="APPROVED">签发该组</button>
+      </div>
+    </form>
+    <form id="supplement-panel" hidden>
+      <h3>提交补证</h3>
+      <p id="dispute-state"></p>
+      <label for="supplement-row">补证行（与来源 CSV 同列）</label>
+      <textarea id="supplement-row" name="supplement-row" rows="2" placeholder="记录键,业务组,kind,task,prerequisite,slots,release,deadline,说明"></textarea>
+      <div class="review-actions"><button class="action" name="supplement" value="submit">提交补证复算</button></div>
+    </form>
     <a id="evidence">下载复核证据</a>
-  </form>
+  </div>
 </aside>
 {% endmacro %}
 {% macro status() %}

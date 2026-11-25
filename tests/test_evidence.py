@@ -35,4 +35,4 @@ def test_download_attachment(client):
     run=client.post('/api/runs',data={'sample':'clean'}).json
     response=client.get('/api/runs/'+run['id']+'/evidence')
     assert response.status_code==200 and 'attachment' in response.headers['Content-Disposition']
-    assert response.json['schema']=='review-evidence/1'
+    assert response.json['schema']=='review-evidence/2'

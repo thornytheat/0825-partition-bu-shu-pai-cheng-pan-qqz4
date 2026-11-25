@@ -1,6 +1,7 @@
 import {element} from './client.js';
 
 const labels = {READY:'通过', MISMATCH:'数值不符', PENDING:'待复核', APPROVED:'已签发', HELD:'已暂缓',
+  OPEN:'争议待裁决', RESOLVED:'争议已采信', EMPTY_CASE:'补证后无有效行',
   INVALID_EQUIVALENCE:'互认条件无效', CREDIT_SHORTFALL:'学分不足', TICKET_MISMATCH:'联单信息不符',
   CONTAMINATION_LIMIT:'杂质率超限', DATA_POSITION_CONFLICT:'数据位置冲突', DANGLING_POSITION:'悬空位置删除',
   LINEAGE_CYCLE:'字段依赖成环', LABEL_TOO_LOW:'分级低于来源', DEPENDENCY_CYCLE:'任务依赖成环',
@@ -31,7 +32,7 @@ const valueLabels = {RPD:'相对偏差', ABSOLUTE:'绝对差', BOTH_ND:'双方�
   MISSING_REQUIRED:'缺少必填字段', AUTHORITY_CONFLICT:'权威编号冲突', CANNOT_LINK:'禁止合并',
   UPSTREAM_UNSCHEDULED:'上游未排程', NO_FEASIBLE_SLOT:'无可用时隙', LEGAL_HOLD:'合法保全',
   RECLAIM:'可回收', LIVE_SNAPSHOT:'活动快照', TRANSPORT:'运输中', DELIVERED:'已签收', CANCELLED:'已取消'};
-const headers = ['业务分组', '输入行', '计算值', '参考值', '判定'];
+const headers = ['业务分组', '输入行', '计算值', '参考值', '判定', '争议与签发'];
 
 export function badge(status) {
   return element('span', labels[status] || status, {class:'badge', 'data-result':status, title: status});
@@ -71,7 +72,7 @@ function detailValue(value) {
   return list.children.length ? list : document.createTextNode('—');
 }
 
-export function snapshot(report, selected, stage) {
+export function snapshot(report, selected, stage, extras = {}) {
   const stats = report.intake;
   document.querySelector('[data-metric="input"]').textContent = stats.input;
   document.querySelector('[data-metric="accepted"]').textContent = stats.accepted;
@@ -90,12 +91,23 @@ export function snapshot(report, selected, stage) {
     if (!stats.isolation.length) body.insertRow().insertCell().textContent = '当前文件没有隔离行';
   } else {
     head.append(...headers.map(title => element('th', title, {scope:'col'})));
+    const signability = report.case_signability || {};
+    const reviews = extras.caseReviews || {};
     for (const row of report.cases || []) {
       const tr = body.insertRow();
       const button = element('button',row.case,{type:'button','data-case':row.case,'aria-pressed':String(row.case===selected)});
       tr.insertCell().append(button);
       [row.records.length, row.measure ? `${row.measure.value} ${row.measure.unit}` : '—', row.measure ? `${row.measure.expected} ${row.measure.unit}` : '—'].forEach(value=>tr.insertCell().textContent=value);
-      tr.insertCell().append(badge(row.status));
+      tr.insertCell().append(badge((signability[row.case]?.effective_status) || row.status));
+      const marks = tr.insertCell();
+      for (const disputeId of row.dispute_ids || []) {
+        marks.append(badge(report.supplements?.[disputeId] ? 'RESOLVED' : 'OPEN'));
+      }
+      const review = reviews[row.case];
+      if (review) marks.append(badge(review.status));
+      else if (signability[row.case] && !signability[row.case].signable && !(row.dispute_ids || []).length) {
+        marks.append(badge(signability[row.case].effective_status));
+      }
     }
   }
   table.createTHead().append(head);

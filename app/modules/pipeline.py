@@ -1,4 +1,5 @@
 from app.business import DomainIssue
+from app.intake.disputes import case_index, collect
 from app.intake.service import inspect
 from app.modules.calculate import compute
 from app.modules.grouping import case_groups
@@ -22,10 +23,16 @@ def evaluate(rows, stage):
 
 def run(data, stage=5):
     intake = inspect(data)
-    output = {'intake': {k:v for k,v in intake.items() if k!='rows'}}
+    disputes = collect(intake['isolation'])
+    disputed = case_index(disputes)
+    output = {'intake': {k:v for k,v in intake.items() if k!='rows'},
+              'disputes': disputes,
+              'source_rows': intake['rows']}
     if stage == 1:
         return output
     cases = [evaluate(rows, stage) for _, rows in case_groups(intake['rows'])]
+    for case in cases:
+        case['dispute_ids'] = disputed.get(case['case'], [])
     output['cases'] = cases
     if stage >= 5:
         output['balance'] = balance(intake,cases)
